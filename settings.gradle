@@ -1,0 +1,5 @@
+rootProject.name = 'mesos-hello-world'
+include "scheduler"
+include "executor"
+include "system-test"
+
