@@ -22,6 +22,11 @@ public class Configuration {
     @Parameter(names = {EXECUTOR_FORCE_PULL_IMAGE}, arity = 1, description = "Option to force pull the executor image.")
     private Boolean executorForcePullImage = false;
 
+    @Parameter(names = {"--frameworkPrincipal"}, description = "The principal to authenticate as")
+    private String frameworkPrincipal = null;
+    @Parameter(names = {"--frameworkSecret"}, description = "The secret to authenticate with, if authenticating as a principal")
+    private String frameworkSecret = null;
+
     public Configuration(String[] args) {
         final JCommander jCommander = new JCommander();
         jCommander.addObject(this);
@@ -52,6 +57,14 @@ public class Configuration {
 
     public Boolean getExecutorForcePullImage() {
         return executorForcePullImage;
+    }
+
+    public String getFrameworkPrincipal() {
+        return frameworkPrincipal;
+    }
+
+    public String getFrameworkSecret() {
+        return frameworkSecret;
     }
 
     /**
