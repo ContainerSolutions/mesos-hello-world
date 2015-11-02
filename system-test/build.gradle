@@ -12,7 +12,8 @@ dependencies {
     compile 'com.github.docker-java:docker-java:1.3.0'
     compile 'com.mashape.unirest:unirest-java:1.4.5'
     compile 'com.jayway.awaitility:awaitility:1.6.3'
-    compile 'com.github.ContainerSolutions:mini-mesos:0.2.7'
+
+    compile 'com.github.ContainerSolutions:mini-mesos:0.4.0'
 
     compile 'org.slf4j:jcl-over-slf4j:1.7.12'
     compile 'org.slf4j:log4j-over-slf4j:1.7.12'

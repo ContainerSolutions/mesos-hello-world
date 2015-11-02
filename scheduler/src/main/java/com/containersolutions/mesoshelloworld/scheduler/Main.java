@@ -8,30 +8,39 @@ import org.apache.mesos.Protos;
  */
 public class Main {
     public static void main(String[] args) throws Exception {
+
         Configuration configuration = new Configuration(args);
 
         Protos.FrameworkInfo.Builder frameworkBuilder = Protos.FrameworkInfo.newBuilder()
-                .setPrincipal(configuration.getFrameworkPrincipal())
                 .setUser("") // Have Mesos fill in the current user.
                 .setName("Hello world example")
                 .setCheckpoint(true);
+
+        String principal = configuration.getFrameworkPrincipal();
+        if( principal != null ) {
+            frameworkBuilder.setPrincipal(principal);
+        }
+
         org.apache.mesos.Scheduler scheduler = new Scheduler(configuration);
 
+        Protos.FrameworkInfo frameworkInfo = frameworkBuilder.build();
+        String mesosMaster = configuration.getMesosMaster();
+
         MesosSchedulerDriver driver =
-            configuration.getFrameworkPrincipal() != null
+                principal != null
               ? new MesosSchedulerDriver(
                         scheduler,
-                        frameworkBuilder.build(),
-                        configuration.getMesosMaster(),
+                        frameworkInfo,
+                        mesosMaster,
                         Protos.Credential.newBuilder()
-                                .setPrincipal(configuration.getFrameworkPrincipal())
+                                .setPrincipal( principal )
                                 .setSecret(ByteString.copyFromUtf8(configuration.getFrameworkSecret()))
                                 .build()
                 )
               : new MesosSchedulerDriver(
                     scheduler,
-                    frameworkBuilder.build(),
-                    configuration.getMesosMaster()
+                    frameworkInfo,
+                    mesosMaster
                 );
 
         int status = driver.run() == Protos.Status.DRIVER_STOPPED ? 0 : 1;

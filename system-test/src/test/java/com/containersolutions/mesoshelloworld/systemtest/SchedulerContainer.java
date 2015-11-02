@@ -3,7 +3,7 @@ package com.containersolutions.mesoshelloworld.systemtest;
 import com.containersolutions.mesoshelloworld.scheduler.Configuration;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.CreateContainerCmd;
-import org.apache.mesos.mini.container.AbstractContainer;
+import com.containersol.minimesos.container.AbstractContainer;
 
 import java.security.SecureRandom;
 import java.util.stream.IntStream;
