@@ -14,12 +14,13 @@ public class TaskInfoFactory {
     }
 
     TaskInfo newTask(Offer offer, Scheduler.ResourceOffer currentOffer) {
-        TaskID taskId = TaskID.newBuilder().setValue(UUID.randomUUID().toString()).build();
 
-        System.out.println("Launching task " + taskId.getValue() +
+        TaskID taskId = TaskID.newBuilder().setValue(UUID.randomUUID().toString()).build();
+        Long port = currentOffer.offerPorts.get(0);
+
+        System.out.println("Launching task " + taskId.getValue() + " for port " + port +
                 " using offer " + offer.getId().getValue());
 
-        Long port = currentOffer.offerPorts.get(0);
         Value.Range singlePortRange = Value.Range.newBuilder().setBegin(port).setEnd(port).build();
 
         TaskInfo task = TaskInfo.newBuilder()
@@ -61,13 +62,19 @@ public class TaskInfoFactory {
     }
 
     ExecutorInfo.Builder newExecutorInfo(Configuration configuration) {
+
+        ContainerInfo.DockerInfo.Builder dockerBuilder = ContainerInfo.DockerInfo.newBuilder()
+                .setNetwork(ContainerInfo.DockerInfo.Network.BRIDGE)
+                .setImage(configuration.getExecutorImage())
+                .setForcePullImage(configuration.getExecutorForcePullImage());
+
         return ExecutorInfo.newBuilder()
                 .setExecutorId(ExecutorID.newBuilder().setValue(UUID.randomUUID().toString()))
                 .setName("hello-world-executor-" + UUID.randomUUID().toString())
                 .setCommand(newCommandInfo(configuration))
                 .setContainer(ContainerInfo.newBuilder()
                         .setType(ContainerInfo.Type.DOCKER)
-                        .setDocker(ContainerInfo.DockerInfo.newBuilder().setNetwork(ContainerInfo.DockerInfo.Network.HOST).setImage(configuration.getExecutorImage()).setForcePullImage(configuration.getExecutorForcePullImage()))
+                        .setDocker( dockerBuilder )
                         .build());
     }
 

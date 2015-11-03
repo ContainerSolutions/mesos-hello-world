@@ -2,12 +2,10 @@ package com.containersolutions.mesoshelloworld.systemtest;
 
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import org.apache.log4j.Logger;
 
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static com.jayway.awaitility.Awaitility.await;
 
@@ -15,12 +13,11 @@ import static com.jayway.awaitility.Awaitility.await;
  * Response which waits until endpoint is ready
  */
 public class HelloWorldResponse {
-    public static final Logger LOGGER = Logger.getLogger(HelloWorldResponse.class);
+
     private boolean discoverySuccessful;
 
-    public HelloWorldResponse(String ip, List<Integer> ports) {
-        List<String> ipAddresses = ports.stream().map(p -> "http://" + ip + ":" + p).collect(Collectors.toList());
-        await().atMost(60, TimeUnit.SECONDS).until(new TasksCall(ipAddresses));
+    public HelloWorldResponse(Set<String> ipAddresses, List<Integer> ports, long timeout) {
+        await().atMost(timeout, TimeUnit.SECONDS).until(new TasksCall(ipAddresses, ports));
     }
 
     public boolean isDiscoverySuccessful() {
@@ -28,24 +25,44 @@ public class HelloWorldResponse {
     }
 
     class TasksCall implements Callable<Boolean> {
-        private final List<String> urls;
 
-        public TasksCall(List<String> urls) {
-            this.urls = urls;
+        private final Set<String> ipAddresses;
+        private final List<Integer> ports;
+
+        public TasksCall(Set<String> ipAddresses, List<Integer> ports) {
+            this.ipAddresses = ipAddresses;
+            this.ports = ports;
         }
 
         @Override
         public Boolean call() throws Exception {
-            urls.forEach(url -> {
-                try {
-                    LOGGER.debug(Unirest.get(url).asString());
-                    discoverySuccessful = true;
-                } catch (UnirestException e) {
-                    LOGGER.debug("Waiting until " + urls.size() + " webapps are started...");
-                    discoverySuccessful = false;
+
+            final Set<String> goodHosts = new HashSet<>(ipAddresses.size());
+
+            ipAddresses.forEach(ip -> {
+
+                if( !goodHosts.contains(ip) ) {
+                    ports.forEach(p -> {
+
+                        if (!goodHosts.contains(ip)) {
+                            String url = "http://" + ip + ":" + p;
+                            try {
+                                System.out.println( goodHosts.size() + ". " + url + " => " + Unirest.get(url).asString().getBody());
+                                goodHosts.add( ip );
+                            } catch (UnirestException e) {
+                                // do nothing
+                            }
+                        }
+                    });
+
                 }
+
             });
+
+            discoverySuccessful = (goodHosts.size() == ipAddresses.size());
             return discoverySuccessful;
+
         }
+
     }
 }

@@ -4,6 +4,7 @@ import org.apache.mesos.Protos.*;
 import org.apache.mesos.SchedulerDriver;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -13,8 +14,8 @@ public class Scheduler implements org.apache.mesos.Scheduler {
 
     public static final double CPUS_PER_TASK = 0.1;
     public static final double MEM_PER_TASK = 128;
+
     private final Configuration configuration;
-    private int launchedTasks = 0;
 
     public Scheduler(Configuration configuration) {
         this.configuration = configuration;
@@ -23,23 +24,31 @@ public class Scheduler implements org.apache.mesos.Scheduler {
     @Override
     public void resourceOffers(SchedulerDriver driver,
                                List<Offer> offers) {
-        List<TaskInfo> newTaskList = new ArrayList<>();
+
         for (Offer offer : offers) {
+
             ResourceOffer currentOffer = new ResourceOffer(offer.getResourcesList());
+            if( currentOffer.isAcceptable() ) {
 
-            System.out.println(
-                    "Received offer " + offer.getId().getValue() + " with cpus: " + currentOffer.offerCpus +
-                            " and mem: " + currentOffer.offerMem + " with ports: " + currentOffer.offerPorts);
+                System.out.println(
+                        "Received offer " + offer.getId().getValue() + " with cpus: " + currentOffer.offerCpus +
+                                " and mem: " + currentOffer.offerMem + " with ports: " + currentOffer.offerPorts);
 
-            while (launchedTasks < configuration.getExecutorNumber() &&
-                    currentOffer.offerCpus >= CPUS_PER_TASK &&
-                    currentOffer.offerMem >= MEM_PER_TASK &&
-                    currentOffer.offerPorts.size() >= 1) {
-                TaskInfo task = new TaskInfoFactory(configuration).newTask(offer, currentOffer);
-                newTaskList.add(task);
+                List<TaskInfo> newTaskList = new ArrayList<>();
+
+                while (newTaskList.size() < configuration.getExecutorNumber() && currentOffer.isAcceptable()) {
+
+                    TaskInfo task = new TaskInfoFactory(configuration).newTask(offer, currentOffer);
+                    newTaskList.add(task);
+
+                }
+
+                Status status = driver.launchTasks(Collections.singletonList(offer.getId()), newTaskList);
+                System.out.println(String.format("Launched %d tasks. Status is %s", newTaskList.size(), status.toString()));
             }
-            driver.launchTasks(offer.getId(), newTaskList);
+
         }
+
     }
 
     @Override
@@ -48,9 +57,27 @@ public class Scheduler implements org.apache.mesos.Scheduler {
 
     @Override
     public void statusUpdate(SchedulerDriver driver, TaskStatus status) {
+
         System.out.println("Status update: task " + status.getTaskId().getValue() +
                 " is in state " + status.getState().getValueDescriptor().getName());
-        // Intentionally don't handle state. Just a demo.
+
+        if (status.getState() == TaskState.TASK_LOST ||
+                status.getState() == TaskState.TASK_KILLED ||
+                status.getState() == TaskState.TASK_FAILED) {
+
+            System.err.println("Aborting because task " + status.getTaskId().getValue() +
+                    " is in unexpected state " +
+                    status.getState().getValueDescriptor().getName() +
+                    " with reason '" +
+                    status.getReason().getValueDescriptor().getName() + "'" +
+                    " from source '" +
+                    status.getSource().getValueDescriptor().getName() + "'" +
+                    " with message '" + status.getMessage() + "'");
+
+            driver.stop();
+
+        }
+
     }
 
     @Override
@@ -111,5 +138,10 @@ public class Scheduler implements org.apache.mesos.Scheduler {
                 }
             }
         }
+
+        public boolean isAcceptable() {
+            return offerCpus >= CPUS_PER_TASK && offerMem >= MEM_PER_TASK && (offerPorts.size() >= 1);
+        }
+
     }
 }
