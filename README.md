@@ -1,6 +1,10 @@
 # mesos-hello-world
 Very simple hello world mesos framework to demonstrate http://github.com/containersolutions/mini-mesos.
 
+## NOTE - This project has been integrated into minimesos
+
+Checkout the [test-framework module in minimesos](https://github.com/ContainerSolutions/minimesos/tree/master/test-framework-docker)
+
 ## Introduction
 This project creates a very simple Apache Mesos framework, with dockerized scheduler and exector containers.
 The goal is to use the scheduler to start a number of dummy "webapps" (webservers that show "Hello world" on /) 
